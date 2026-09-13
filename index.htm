@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>maggie's player</title>
+  <style>
+    :root{
+      --design:360px;
+      --cream:#f0dcac;
+      --gold-soft:#dfbc75;
+      --gold-pale:#ffe3a0;
+
+      /* Все координаты относятся ко всей квадратной PNG, вместе с ее полями. */
+      --title-left:39%;
+      --title-top:14%;
+      --title-width:30%;
+      --title-height:12%;
+      --menu-left:72%;
+      --menu-top:14%;
+      --water-left:24%;
+      --water-top:46.6%;
+      --water-width:56.7%;
+      --water-height:32%;
+      --seek-left:30%;
+      --seek-top:80.7%;
+      --seek-width:40%;
+      --buttons-left:50%;
+      --buttons-top:84%;
+    }
+
+    *{ box-sizing:border-box; }
+    [hidden]{ display:none !important; }
+
+    html,body{
+      width:100%;
+      height:100%;
+      margin:0;
+      overflow:hidden;
+      background:transparent;
+      font-family:Georgia,"Times New Roman",serif;
+    }
+
+    #viewport{
+      position:relative;
+      width:100%;
+      height:100%;
+      overflow:hidden;
+      background:transparent;
+    }
+
+    #design{
+      position:absolute;
+      left:50%;
+      top:50%;
+      width:var(--design);
+      height:var(--design);
+      transform-origin:center center;
+      pointer-events:none;
+    }
+
+    .player,.content{
+      position:relative;
+      width:100%;
+      height:100%;
+      margin:0;
+      padding:0;
+      border:0;
+      border-radius:0;
+      background:transparent;
+      box-shadow:none;
+      color:var(--cream);
+      pointer-events:none;
+    }
+
+    .player-art{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      user-select:none;
+      pointer-events:none;
+    }
+
+    .content{ z-index:2; }
+
+    .topbar{
+      position:absolute;
+      left:var(--title-left);
+      top:var(--title-top);
+      width:var(--title-width);
+      height:var(--title-height);
+      display:grid;
+      align-items:center;
+      text-align:center;
+      background:transparent;
+    }
+
+    .artist{
+      display:-webkit-box;
+      -webkit-box-orient:vertical;
+      -webkit-line-clamp:2;
+      overflow:hidden;
+      overflow-wrap:anywhere;
+      font-size:10px;
+      line-height:1;
+      font-weight:400;
+      letter-spacing:.015em;
+      color:var(--gold-pale);
+    }
+
+    .menu{
+      position:absolute;
+      left:var(--menu-left);
+      top:var(--menu-top);
+      width:20px;
+      height:20px;
+      padding:0;
+      appearance:none;
+      border:0;
+      border-radius:1px;
+      background:transparent;
+      box-shadow:none;
+      color:var(--gold-soft);
+      font-size:17px;
+      cursor:pointer;
+      pointer-events:auto;
+      text-shadow:0 1px 3px #251309;
+    }
+
+    .disc-zone{
+      position:absolute;
+      left:var(--water-left);
+      top:var(--water-top);
+      width:var(--water-width);
+      height:var(--water-height);
+      background:transparent;
+      pointer-events:none;
+    }
+
+    .mixer-ring{
+      position:absolute;
+      inset:0;
+      background:transparent;
+      border:0;
+      box-shadow:none;
+      pointer-events:none;
+      touch-action:none;
+    }
+
+    .volume-dial{
+      display:block;
+      width:100%;
+      height:100%;
+      overflow:visible;
+      pointer-events:none;
+    }
+
+    .dial-track,.dial-level{
+      fill:none;
+      stroke:var(--gold-pale);
+      stroke-width:1.2;
+      stroke-linecap:round;
+      pointer-events:none;
+    }
+    .dial-track{ opacity:.3; }
+    .dial-level{ opacity:.8; }
+    .dial-hit{
+      fill:none;
+      stroke:transparent;
+      stroke-width:22;
+      pointer-events:stroke;
+      cursor:pointer;
+      touch-action:none;
+    }
+    .disc-wrap{
+      position:absolute;
+      top:50%;
+      left:0;
+      width:100%;
+      aspect-ratio:1;
+      transform:translateY(-50%) scaleY(.549);
+      pointer-events:none;
+    }
+    .disc{
+      position:absolute;
+      inset:0;
+      background:transparent;
+      opacity:0;
+      animation:spin 8s linear infinite;
+      animation-play-state:paused;
+      pointer-events:none;
+    }
+    .disc.playing{ animation-play-state:running; opacity:.15; }
+    .disc svg{ display:block; width:100%; height:100%; }
+
+    .volume-knob{
+      position:absolute;
+      width:10px;
+      height:10px;
+      border:0px solid rgba(80,50,15,.8);
+      border-radius:50%;
+      background:radial-gradient(circle at 35% 30%,#FFDAB9,#dab264 50%,#8d622e);
+      box-shadow:0 1px 4px rgba(24,15,6,.45);
+      z-index:3;
+      cursor:grab;
+      touch-action:none;
+      pointer-events:auto;
+    }
+    .volume-knob.is-dragging{ cursor:grabbing; }
+    .volume-readout{
+      position:absolute;
+      right:14%;
+      top:40%;
+      font-size:9px;
+      color:var(--gold-pale);
+      opacity:0;
+      text-shadow:0 1px 3px #273634;
+      pointer-events:none;
+    }
+    .disc-zone:hover .volume-readout,
+    .disc-zone:focus-within .volume-readout{ opacity:1; }
+
+    .timeline{
+      position:absolute;
+      left:var(--seek-left);
+      top:var(--seek-top);
+      width:var(--seek-width);
+      height:13px;
+      display:flex;
+      align-items:center;
+      background:transparent;
+      pointer-events:auto;
+    }
+    #seek{
+      --progress:0%;
+      appearance:none;
+      -webkit-appearance:none;
+      width:100%;
+      height:13px;
+      margin:0;
+      border:0;
+      border-radius:0;
+      background:transparent;
+      cursor:pointer;
+    }
+    #seek::-webkit-slider-runnable-track{
+      height:2px;
+      border-radius:99px;
+      background:linear-gradient(to right,var(--gold-soft) 0 var(--progress),rgba(223,188,117,.24) var(--progress) 100%);
+    }
+    #seek::-webkit-slider-thumb{
+      appearance:none;
+      -webkit-appearance:none;
+      width:8px;
+      height:8px;
+      margin-top:-3px;
+      border:0;
+      border-radius:50%;
+      background:var(--gold-pale);
+      box-shadow:0 1px 3px rgba(19,10,3,.65);
+    }
+    #seek::-moz-range-track{
+      height:2px;
+      border-radius:99px;
+      background:rgba(223,188,117,.24);
+    }
+    #seek::-moz-range-progress{ height:2px; background:var(--gold-soft); }
+    #seek::-moz-range-thumb{
+      width:8px;
+      height:8px;
+      border:0;
+      border-radius:50%;
+      background:var(--gold-pale);
+    }
+
+    .transport{
+      position:absolute;
+      left:var(--buttons-left);
+      top:var(--buttons-top);
+      transform:translateX(-50%);
+      display:flex;
+      align-items:center;
+      gap:7px;
+      padding:0;
+      background:transparent;
+      border:0;
+      box-shadow:none;
+      pointer-events:auto;
+    }
+    .control{
+      appearance:none;
+      width:44px;
+      height:36px;
+      display:grid;
+      place-items:center;
+      padding:0;
+      border:0;
+      border-radius:4px;
+      background:transparent;
+      box-shadow:none;
+      color:var(--gold-soft);
+      font:700 16px/1 Georgia,"Times New Roman",serif;
+      cursor:pointer;
+    }
+    .control.play{ width:64px; font-size:25px; color:var(--gold-pale); }
+    .control:active{ transform:translateY(1px); }
+    .control:hover,.menu:hover{ color:#fff2c6; }
+    .control:focus-visible,.menu:focus-visible,.volume-knob:focus-visible,#seek:focus-visible{
+      outline:1px solid var(--gold-pale);
+      outline-offset:3px;
+    }
+
+    .playlist-drawer{
+      position:absolute;
+      z-index:5;
+      left:var(--title-left);
+      top:13.5%;
+      width:var(--title-width);
+      height:17.5%;
+      background:transparent;
+      border:0;
+      box-shadow:none;
+      pointer-events:auto;
+    }
+    .playlist-list{
+      height:100%;
+      overflow-y:auto;
+      overscroll-behavior:contain;
+      scrollbar-width:thin;
+      scrollbar-color:rgba(223,188,117,.7) transparent;
+    }
+    .playlist-list::-webkit-scrollbar{ width:3px; }
+    .playlist-list::-webkit-scrollbar-thumb{ background:rgba(223,188,117,.7); }
+    .player.playlist-open .artist{ visibility:hidden; }
+    .track{
+      appearance:none;
+      width:100%;
+      min-height:20px;
+      display:grid;
+      grid-template-columns:14px minmax(0,1fr) 12px;
+      align-items:center;
+      gap:3px;
+      padding:3px 2px;
+      border:0;
+      background:transparent;
+      color:var(--cream);
+      text-align:left;
+      font-family:Georgia,"Times New Roman",serif;
+      cursor:pointer;
+      text-shadow:0 1px 3px #1f1008;
+    }
+    .track:hover,.track.active{ background:transparent; color:var(--gold-pale); }
+    .track:focus-visible{ outline:1px solid var(--gold-soft); outline-offset:-1px; }
+    .track-no,.track-state{ font-size:8px; color:var(--gold-soft); }
+    .track-artist{
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
+      font-size:10px;
+      line-height:1.3;
+    }
+    .track-state{ text-align:center; }
+    .player-status{
+      position:absolute;
+      left:var(--title-left);
+      top:26%;
+      width:var(--title-width);
+      margin:0;
+      color:var(--gold-pale);
+      font-size:8px;
+      line-height:1.25;
+      text-align:center;
+      text-shadow:0 1px 3px #251309;
+    }
+    audio{ display:none; }
+    @keyframes spin{ from{ transform:rotate(0deg); } to{ transform:rotate(360deg); } }
+    @media (prefers-reduced-motion:reduce){ .disc{ animation:none; } }
+  </style>
+</head>
+<body>
+  <div id="viewport">
+    <div id="design">
+      <main class="player" aria-label="Музыкальный плеер Мэгги">
+        <img class="player-art" id="playerArt" alt="" hidden />
+        <div class="content">
+          <div class="topbar">
+            <div class="artist" id="artistText" aria-live="polite">Count Your Blessings</div>
+          </div>
+          <button class="menu" id="menuBtn" type="button" aria-label="Плейлист" aria-controls="playlistDrawer" aria-expanded="false" title="Открыть плейлист">☰</button>
+
+          <section class="disc-zone" aria-label="Громкость и пластинка">
+            <div class="disc-wrap" aria-hidden="true">
+              <div class="disc" id="disc">
+                <svg viewBox="0 0 200 200" focusable="false">
+                  <path d="M35 90 A66 66 0 0 1 105 34 M166 113 A68 68 0 0 1 105 168" fill="none" stroke="#fff2ca" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+              </div>
+            </div>
+            <div class="mixer-ring" id="volumeArc" aria-hidden="true">
+              <svg class="volume-dial" viewBox="0 0 200 200" preserveAspectRatio="none" focusable="false">
+                <path class="dial-track" d="M149.812 179.717 A94 94 0 0 0 149.812 20.283" />
+                <path class="dial-level" id="volumeLevel" pathLength="100" stroke-dasharray="100" stroke-dashoffset="22" d="M149.812 179.717 A94 94 0 0 0 149.812 20.283" />
+                <path class="dial-hit" d="M149.812 179.717 A94 94 0 0 0 149.812 20.283" />
+              </svg>
+            </div>
+            <div class="volume-knob" id="volumeKnob" role="slider" tabindex="0" aria-label="Громкость" aria-valuemin="0" aria-valuemax="100" aria-valuenow="78" aria-valuetext="78 процентов" title="Громкость: 78%. Потяни вдоль дуги"></div>
+            <output class="volume-readout" id="volumeReadout" aria-hidden="true">78%</output>
+          </section>
+
+          <section class="timeline" aria-label="Прогресс трека">
+            <input id="seek" type="range" min="0" max="100" step=".1" value="0" aria-label="Прогресс трека" />
+          </section>
+          <div class="transport">
+            <button class="control" id="prevBtn" type="button" aria-label="Предыдущий трек" title="Предыдущий трек">◀◀</button>
+            <button class="control play" id="playBtn" type="button" aria-label="Воспроизвести" title="Воспроизвести">▶</button>
+            <button class="control" id="nextBtn" type="button" aria-label="Следующий трек" title="Следующий трек">▶▶</button>
+          </div>
+          <p class="player-status" id="playerStatus" role="status" hidden></p>
+        </div>
+        <div class="playlist-drawer" id="playlistDrawer" hidden>
+          <div class="playlist-list" id="playlist"></div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <audio id="audio" preload="metadata"></audio>
+
+  <script>
+    // Основной файл: прозрачная накладка без картинки.
+    // Если PNG должна находиться внутри HTML, вставьте ее прямую ссылку сюда.
+    // В отдельном файле preview картинка уже встроена, ссылка не требуется.
+    const PLAYER_ART_URL = "/.player_image.webp";
+
+    // Исходные треки и ссылки сохранены без изменений.
+    const TRACKS = [
+      { artist: "the chicken is naked and afraid", url: "/.1.mp3" },
+      { artist: "throne", url: "/.2.mp3" },
+      { artist: "little knives", url: "/.3.mp3" },
+      { artist: "sit / stay", url: "/.4.mp3" },
+      { artist: "everything i wanted", url: "/.5.mp3" },
+      { artist: "my destiny", url: "/.6.mp3" }
+    ];
+    const LOOP_PLAYLIST = true;
+    const DESIGN_SIZE = 360;
+    const design = document.getElementById("design");
+    const viewport = document.getElementById("viewport");
+    const player = document.querySelector(".player");
+    const playerArt = document.getElementById("playerArt");
+    const audio = document.getElementById("audio");
+    const disc = document.getElementById("disc");
+    const playBtn = document.getElementById("playBtn");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const menuBtn = document.getElementById("menuBtn");
+    const seek = document.getElementById("seek");
+    const artistText = document.getElementById("artistText");
+    const playlistEl = document.getElementById("playlist");
+    const playlistDrawer = document.getElementById("playlistDrawer");
+    const volumeKnob = document.getElementById("volumeKnob");
+    const volumeArc = document.getElementById("volumeArc");
+    const volumeLevel = document.getElementById("volumeLevel");
+    const volumeReadout = document.getElementById("volumeReadout");
+    const playerStatus = document.getElementById("playerStatus");
+    const discZone = document.querySelector(".disc-zone");
+    let currentIndex = 0;
+    let volumeValue = .78;
+    let volumePointerId = null;
+    let loadVersion = 0;
+
+    if(PLAYER_ART_URL){
+      playerArt.addEventListener("error",function(){
+        showStatus("Картинка не загрузилась. Проверьте прямую ссылку на PNG.");
+      });
+      playerArt.src = PLAYER_ART_URL;
+      playerArt.hidden = false;
+    }
+
+    function fitDesign(){
+      const scale = Math.min(viewport.clientWidth / DESIGN_SIZE,viewport.clientHeight / DESIGN_SIZE);
+      design.style.transform = "translate(-50%, -50%) scale(" + scale + ")";
+      requestAnimationFrame(updateVolumeKnob);
+    }
+    function clamp(value,min,max){ return Math.min(max,Math.max(min,value)); }
+    function showStatus(message){
+      playerStatus.textContent = message;
+      playerStatus.hidden = !message;
+    }
+    function updateSeek(value){
+      value = clamp(value,0,100);
+      seek.value = String(value);
+      seek.style.setProperty("--progress",value + "%");
+    }
+    function setVolume(value){
+      if(!Number.isFinite(value)) return;
+      volumeValue = clamp(value,0,1);
+      audio.volume = volumeValue;
+      audio.muted = false;
+      const percent = Math.round(volumeValue * 100);
+      volumeKnob.setAttribute("aria-valuenow",String(percent));
+      volumeKnob.setAttribute("aria-valuetext",percent + " процентов");
+      volumeKnob.title = "Громкость: " + percent + "%. Потяни вдоль дуги";
+      volumeReadout.textContent = percent + "%";
+      volumeLevel.setAttribute("stroke-dashoffset",String(100 - volumeValue * 100));
+      updateVolumeKnob();
+    }
+
+    // Правая дуга: снизу тише, сверху громче. Радиусы X и Y независимы.
+    function updateVolumeKnob(){
+      const width = volumeArc.offsetWidth;
+      const height = volumeArc.offsetHeight;
+      if(!width || !height) return;
+      const angle = (58 - volumeValue * 116) * Math.PI / 180;
+      const x = volumeArc.offsetLeft + width / 2 + Math.cos(angle) * width * .47;
+      const y = volumeArc.offsetTop + height / 2 + Math.sin(angle) * height * .47;
+      volumeKnob.style.left = (x - volumeKnob.offsetWidth / 2) + "px";
+      volumeKnob.style.top = (y - volumeKnob.offsetHeight / 2) + "px";
+    }
+    function volumeFromPointer(clientX,clientY){
+      const rect = volumeArc.getBoundingClientRect();
+      if(!rect.width || !rect.height) return;
+      const x = (clientX - rect.left - rect.width / 2) / (rect.width * .47);
+      const y = (clientY - rect.top - rect.height / 2) / (rect.height * .47);
+      const angle = clamp(Math.atan2(y,x) * 180 / Math.PI,-58,58);
+      setVolume((58 - angle) / 116);
+    }
+    function startVolumeDrag(event){
+      if(volumePointerId !== null || !event.isPrimary || event.button !== 0) return;
+      volumePointerId = event.pointerId;
+      volumeKnob.classList.add("is-dragging");
+      volumeKnob.setPointerCapture(event.pointerId);
+      volumeFromPointer(event.clientX,event.clientY);
+      event.preventDefault();
+    }
+    function endVolumeDrag(event){
+      if(event.pointerId !== volumePointerId) return;
+      volumePointerId = null;
+      volumeKnob.classList.remove("is-dragging");
+    }
+    volumeKnob.addEventListener("pointerdown",startVolumeDrag);
+    volumeArc.addEventListener("pointerdown",startVolumeDrag);
+    volumeKnob.addEventListener("pointermove",function(event){
+      if(event.pointerId === volumePointerId) volumeFromPointer(event.clientX,event.clientY);
+    });
+    volumeKnob.addEventListener("pointerup",endVolumeDrag);
+    volumeKnob.addEventListener("pointercancel",endVolumeDrag);
+    volumeKnob.addEventListener("lostpointercapture",endVolumeDrag);
+    volumeKnob.addEventListener("wheel",function(event){
+      if(!event.deltaY) return;
+      event.preventDefault();
+      setVolume(volumeValue + (event.deltaY < 0 ? .05 : -.05));
+    },{passive:false});
+    volumeKnob.addEventListener("keydown",function(event){
+      if(event.key === "ArrowUp" || event.key === "ArrowRight"){ setVolume(volumeValue + .05); event.preventDefault(); }
+      if(event.key === "ArrowDown" || event.key === "ArrowLeft"){ setVolume(volumeValue - .05); event.preventDefault(); }
+      if(event.key === "Home"){ setVolume(0); event.preventDefault(); }
+      if(event.key === "End"){ setVolume(1); event.preventDefault(); }
+    });
+    window.addEventListener("blur",function(){
+      volumePointerId = null;
+      volumeKnob.classList.remove("is-dragging");
+    });
+
+    function setPlaylistOpen(open){
+      playlistDrawer.hidden = !open;
+      playlistDrawer.classList.toggle("open",open);
+      player.classList.toggle("playlist-open",open);
+      menuBtn.setAttribute("aria-expanded",String(open));
+      menuBtn.title = open ? "Закрыть плейлист" : "Открыть плейлист";
+    }
+    function renderPlaylist(){
+      playlistEl.replaceChildren();
+      TRACKS.forEach(function(track,index){
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "track";
+        button.title = track.artist;
+        button.innerHTML = '<span class="track-no"></span><span class="track-artist"></span><span class="track-state"></span>';
+        button.querySelector(".track-no").textContent = String(index + 1).padStart(2,"0");
+        button.querySelector(".track-artist").textContent = track.artist;
+        button.addEventListener("click",function(){
+          loadTrack(index,true);
+          setPlaylistOpen(false);
+          menuBtn.focus({preventScroll:true});
+        });
+        playlistEl.appendChild(button);
+      });
+      syncPlaylistState();
+    }
+    function syncPlaylistState(){
+      Array.from(playlistEl.children).forEach(function(element,index){
+        const active = index === currentIndex;
+        element.classList.toggle("active",active);
+        element.setAttribute("aria-current",active ? "true" : "false");
+        element.querySelector(".track-state").textContent = active ? (audio.paused ? "•" : "▶") : "";
+      });
+    }
+    async function playAudio(version){
+      try{
+        await audio.play();
+        if(version === loadVersion) showStatus("");
+      }catch(error){
+        if(version !== loadVersion || error.name === "AbortError") return;
+        if(error.name === "NotAllowedError") showStatus("Нажми ▶, чтобы запустить музыку.");
+        else showStatus("Трек не загрузился. Проверьте ссылку или выберите другой.");
+        syncPlay();
+      }
+    }
+    function loadTrack(index,autoplay){
+      if(!TRACKS.length) return;
+      const version = ++loadVersion;
+      audio.pause();
+      currentIndex = clamp(index,0,TRACKS.length - 1);
+      const track = TRACKS[currentIndex];
+      showStatus("");
+      audio.src = track.url;
+      updateSeek(0);
+      artistText.textContent = track.artist;
+      artistText.title = track.artist;
+      syncPlaylistState();
+      audio.load();
+      if(autoplay) playAudio(version);
+    }
+    function nextTrack(){
+      if(currentIndex < TRACKS.length - 1) loadTrack(currentIndex + 1,true);
+      else if(LOOP_PLAYLIST && TRACKS.length) loadTrack(0,true);
+    }
+    function prevTrack(){
+      if(audio.currentTime > 3){
+        audio.currentTime = 0;
+        updateSeek(0);
+        return;
+      }
+      if(currentIndex > 0) loadTrack(currentIndex - 1,true);
+      else if(LOOP_PLAYLIST && TRACKS.length) loadTrack(TRACKS.length - 1,true);
+      else{ audio.currentTime = 0; updateSeek(0); }
+    }
+    function syncPlay(){
+      const paused = audio.paused;
+      playBtn.textContent = paused ? "▶" : "❚❚";
+      playBtn.setAttribute("aria-label",paused ? "Воспроизвести" : "Пауза");
+      playBtn.title = paused ? "Воспроизвести" : "Пауза";
+      disc.classList.toggle("playing",!paused);
+      syncPlaylistState();
+    }
+    playBtn.addEventListener("click",function(){
+      if(!TRACKS.length) return;
+      if(audio.paused) playAudio(loadVersion);
+      else audio.pause();
+    });
+    nextBtn.addEventListener("click",nextTrack);
+    prevBtn.addEventListener("click",prevTrack);
+    menuBtn.addEventListener("click",function(event){
+      event.stopPropagation();
+      setPlaylistOpen(playlistDrawer.hidden);
+    });
+    document.addEventListener("pointerdown",function(event){
+      if(!playlistDrawer.contains(event.target) && !menuBtn.contains(event.target)) setPlaylistOpen(false);
+    });
+    document.addEventListener("keydown",function(event){
+      if(event.key === "Escape" && !playlistDrawer.hidden){
+        setPlaylistOpen(false);
+        menuBtn.focus({preventScroll:true});
+      }
+    });
+    seek.addEventListener("input",function(){
+      const value = Number(seek.value);
+      updateSeek(value);
+      if(Number.isFinite(audio.duration) && audio.duration > 0) audio.currentTime = value / 100 * audio.duration;
+    });
+    audio.addEventListener("timeupdate",function(){
+      if(Number.isFinite(audio.duration) && audio.duration > 0) updateSeek(audio.currentTime / audio.duration * 100);
+    });
+    audio.addEventListener("play",syncPlay);
+    audio.addEventListener("pause",syncPlay);
+    audio.addEventListener("ended",function(){ syncPlay(); updateSeek(0); nextTrack(); });
+    audio.addEventListener("error",function(){
+      showStatus("Трек не загрузился. Проверьте ссылку или выберите другой.");
+      syncPlay();
+    });
+    window.addEventListener("resize",fitDesign);
+    if(typeof ResizeObserver !== "undefined") new ResizeObserver(fitDesign).observe(viewport);
+    renderPlaylist();
+    setVolume(volumeValue);
+    if(TRACKS.length) loadTrack(0,false);
+    fitDesign();
+  </script>
+</body>
+</html>
