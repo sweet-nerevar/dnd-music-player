@@ -13,7 +13,7 @@
 
       /* Все координаты относятся ко всей квадратной PNG, вместе с ее полями. */
       --title-left:39%;
-      --title-top:14%;
+      --title-top:15%;
       --title-width:30%;
       --title-height:12%;
       --menu-left:72%;
@@ -38,7 +38,7 @@
       margin:0;
       overflow:hidden;
       background:transparent;
-      font-family:Georgia,"Times New Roman",serif;
+      font-family:Palatino, "Palatino Linotype", serif;
     }
 
     #viewport{
@@ -103,8 +103,8 @@
       -webkit-line-clamp:2;
       overflow:hidden;
       overflow-wrap:anywhere;
-      font-size:10px;
-      line-height:1;
+      font-size:12px;
+      line-height:1.1;
       font-weight:400;
       letter-spacing:.015em;
       color:var(--gold-pale);
@@ -382,11 +382,11 @@
 <body>
   <div id="viewport">
     <div id="design">
-      <main class="player" aria-label="Музыкальный плеер Мэгги">
+      <main class="player" aria-label="проигрыватель">
         <img class="player-art" id="playerArt" alt="" hidden />
         <div class="content">
           <div class="topbar">
-            <div class="artist" id="artistText" aria-live="polite">Count Your Blessings</div>
+            <div class="artist" id="artistText" aria-live="polite">что-то</div>
           </div>
           <button class="menu" id="menuBtn" type="button" aria-label="Плейлист" aria-controls="playlistDrawer" aria-expanded="false" title="Открыть плейлист">☰</button>
 
@@ -428,17 +428,18 @@
   <audio id="audio" preload="metadata"></audio>
 
   <script>
-    const PLAYER_ART_URL = "./player_image.webp";
+    const PLAYER_ART_URL = "./player_image2.webp";
 
     // Исходные треки и ссылки
     const TRACKS = [
-      { artist: "star v", url: "./7.mp3" },
-      { artist: "the chicken is naked and afraid", url: "./1.mp3" },
-      { artist: "throne", url: "./2.mp3" },
-      { artist: "little knives", url: "./3.mp3" },
-      { artist: "sit / stay", url: "./4.mp3" },
-      { artist: "everything i wanted", url: "./5.mp3" },
-      { artist: "my destiny", url: "./6.mp3" }
+      { artist: "Cover the Moon When I'm Gone", url: "./8.mp3" },
+      { artist: "Star V", url: "./7.mp3" },
+      { artist: "The Chicken is Naked and Afraid", url: "./1.mp3" },
+      { artist: "Throne", url: "./2.mp3" },
+      { artist: "Little Knives", url: "./3.mp3" },
+      { artist: "Sit / Stay", url: "./4.mp3" },
+      { artist: "Everything I Wanted", url: "./5.mp3" },
+      { artist: "My Destiny", url: "./6.mp3" }
     ];
     const LOOP_PLAYLIST = true;
     const DESIGN_SIZE = 360;
